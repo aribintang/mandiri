@@ -275,7 +275,7 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        pesan: messageText
+                        message: messageText
                     })
                 });
 
@@ -287,9 +287,9 @@
 
                 const data = await response.json();
                 
-                // Pastikan format response sesuai dengan yang diminta: { "jawaban": "teks..." }
-                if (data && data.jawaban) {
-                    appendMessage(data.jawaban, false);
+                // Format response dari backend: { "reply": "teks..." }
+                if (data && data.reply) {
+                    appendMessage(data.reply, false);
                 } else {
                     appendMessage("Maaf, format respons dari server tidak dikenali.", false);
                 }
@@ -297,14 +297,7 @@
             } catch (error) {
                 removeTypingIndicator();
                 console.error('Error fetching chat:', error);
-                
-                // --- BAGIAN MOCKUP UNTUK PREVIEW (Hapus bagian ini di production) ---
-                // Jika fetch gagal (misal karena endpoint /api/chat tidak ada saat preview), 
-                // kita beri simulasi balasan agar UI tetap terlihat bekerja saat di-test lokal.
-                setTimeout(() => {
-                    appendMessage("Ini adalah pesan simulasi. (Error sistem: Endpoint `/api/chat` tidak dapat dijangkau karena Anda sedang melihat preview frontend. Di environment production dengan backend yang menyala, balasan ini akan berasal dari AI).", false);
-                }, 600);
-                // ----------------------------------------------------------------------
+                appendMessage("Maaf, terjadi kesalahan koneksi. Silakan coba lagi.", false);
             }
         });
 
