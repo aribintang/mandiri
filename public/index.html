@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot Assistant</title>
+    
+    <!-- Menggunakan font Inter untuk tampilan yang bersih dan modern -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS untuk styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        bot: '#f9fafb', // gray-50
+                        user: '#2563eb', // blue-600
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Custom CSS untuk animasi halus -->
+    <style>
+        /* Animasi munculnya pesan dari bawah */
+        @keyframes slideUpFade {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-message {
+            animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Animasi loading titik-titik (typing indicator) */
+        @keyframes blink {
+            0%, 100% { opacity: 0.2; }
+            20% { opacity: 1; }
+        }
+        
+        .dot {
+            animation: blink 1.4s infinite both;
+            height: 6px;
+            width: 6px;
+            background-color: #6b7280;
+            border-radius: 50%;
+            display: inline-block;
+            margin: 0 2px;
+        }
+        
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+
+        /* Custom scrollbar yang elegan */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #e5e7eb;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d1d5db;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 h-screen flex flex-col font-sans overflow-hidden">
+
+    <!-- Header / Navbar -->
+    <header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-center shrink-0 z-10 shadow-sm">
+        <div class="flex items-center gap-2">
+            <!-- Icon Bot (SVG inline) -->
+            <div class="bg-blue-600 p-1.5 rounded-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 8V4H8"></path>
+                    <rect width="16" height="12" x="4" y="8" rx="2"></rect>
+                    <path d="M2 14h2"></path>
+                    <path d="M20 14h2"></path>
+                    <path d="M15 13v2"></path>
+                    <path d="M9 13v2"></path>
+                </svg>
+            </div>
+            <h1 class="text-xl font-semibold text-gray-800 tracking-tight">Asisten AI</h1>
+        </div>
+    </header>
+
+    <!-- Area Percakapan (Chat Box) -->
+    <main id="chat-container" class="flex-1 overflow-y-auto w-full px-4 py-6 scroll-smooth">
+        <div class="max-w-3xl mx-auto flex flex-col gap-6 pb-4" id="chat-messages">
+            <!-- Pesan Sambutan (Bot) -->
+            <div class="flex flex-col gap-1 items-start w-full animate-message">
+                <div class="flex gap-4 w-full md:w-[85%]">
+                    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0 border border-blue-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"></path><rect width="16" height="12" x="4" y="8" rx="2"></rect><path d="M2 14h2"></path><path d="M20 14h2"></path><path d="M15 13v2"></path><path d="M9 13v2"></path></svg>
+                    </div>
+                    <div class="bg-white border border-gray-200 px-5 py-3.5 rounded-2xl rounded-tl-sm shadow-sm text-[15px] leading-relaxed text-gray-700">
+                        Halo! Saya adalah Asisten AI Anda. Ada yang bisa saya bantu hari ini?
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Area Input Pesan -->
+    <footer class="bg-gradient-to-t from-gray-50 via-gray-50 to-transparent pt-2 pb-6 px-4 shrink-0">
+        <div class="max-w-3xl mx-auto relative">
+            <form id="chat-form" class="relative flex items-end shadow-md bg-white border border-gray-300 rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all duration-200">
+                <textarea 
+                    id="chat-input" 
+                    rows="1"
+                    class="w-full max-h-32 py-4 pl-4 pr-12 bg-transparent border-none focus:outline-none resize-none text-[15px] placeholder-gray-400"
+                    placeholder="Tulis pesan Anda di sini..."
+                    required
+                ></textarea>
+                
+                <button 
+                    type="submit" 
+                    id="send-button"
+                    class="absolute right-2 bottom-2 p-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                    aria-label="Kirim Pesan"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </form>
+            <div class="text-center mt-2">
+                <span class="text-xs text-gray-400">AI dapat membuat kesalahan. Harap periksa kembali informasi penting.</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Logika JavaScript -->
+    <script>
+        const chatForm = document.getElementById('chat-form');
+        const chatInput = document.getElementById('chat-input');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatContainer = document.getElementById('chat-container');
+        const sendButton = document.getElementById('send-button');
+
+        // Fungsi untuk menyesuaikan tinggi textarea secara otomatis (auto-expand)
+        chatInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+            
+            // Mengatur disable button jika kosong
+            if(this.value.trim() === '') {
+                sendButton.disabled = true;
+            } else {
+                sendButton.disabled = false;
+            }
+        });
+
+        // Tangani menekan "Enter" untuk mengirim pesan (Shift+Enter untuk baris baru)
+        chatInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if(this.value.trim() !== '') {
+                    chatForm.dispatchEvent(new Event('submit'));
+                }
+            }
+        });
+
+        // Fungsi untuk scroll ke bawah
+        function scrollToBottom() {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Fungsi untuk menambahkan gelembung pesan ke UI
+        function appendMessage(text, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `flex flex-col gap-1 w-full animate-message ${isUser ? 'items-end' : 'items-start'}`;
+
+            // Menggunakan textContent untuk mencegah XSS (Cross-Site Scripting)
+            const escapedText = document.createElement('div');
+            escapedText.textContent = text;
+            // Mengubah \n menjadi <br> agar baris baru ter-render
+            const formattedText = escapedText.innerHTML.replace(/\n/g, '<br>');
+
+            if (isUser) {
+                messageDiv.innerHTML = `
+                    <div class="flex gap-4 w-full md:w-[85%] justify-end">
+                        <div class="bg-blue-600 text-white px-5 py-3.5 rounded-2xl rounded-tr-sm shadow-sm text-[15px] leading-relaxed max-w-full overflow-hidden">
+                            ${formattedText}
+                        </div>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="flex gap-4 w-full md:w-[85%]">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0 border border-blue-200 mt-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"></path><rect width="16" height="12" x="4" y="8" rx="2"></rect><path d="M2 14h2"></path><path d="M20 14h2"></path><path d="M15 13v2"></path><path d="M9 13v2"></path></svg>
+                        </div>
+                        <div class="bg-white border border-gray-200 px-5 py-3.5 rounded-2xl rounded-tl-sm shadow-sm text-[15px] leading-relaxed text-gray-700 max-w-full overflow-hidden">
+                            ${formattedText}
+                        </div>
+                    </div>
+                `;
+            }
+
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        // Fungsi untuk menampilkan animasi indikator mengetik
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.id = 'typing-indicator';
+            typingDiv.className = 'flex flex-col gap-1 items-start w-full animate-message';
+            typingDiv.innerHTML = `
+                <div class="flex gap-4 w-full md:w-[85%]">
+                    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0 border border-blue-200 mt-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"></path><rect width="16" height="12" x="4" y="8" rx="2"></rect><path d="M2 14h2"></path><path d="M20 14h2"></path><path d="M15 13v2"></path><path d="M9 13v2"></path></svg>
+                    </div>
+                    <div class="bg-white border border-gray-200 px-5 py-4 rounded-2xl rounded-tl-sm shadow-sm flex items-center h-[52px]">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+            `;
+            chatMessages.appendChild(typingDiv);
+            scrollToBottom();
+        }
+
+        // Fungsi untuk menghapus animasi indikator mengetik
+        function removeTypingIndicator() {
+            const typingDiv = document.getElementById('typing-indicator');
+            if (typingDiv) {
+                typingDiv.remove();
+            }
+        }
+
+        // Event listener saat form dikirim
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const messageText = chatInput.value.trim();
+            if (!messageText) return;
+
+            // 1. Tampilkan pesan user
+            appendMessage(messageText, true);
+            
+            // 2. Kosongkan input dan reset tingginya
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
+            sendButton.disabled = true;
+
+            // 3. Tampilkan indikator mengetik
+            showTypingIndicator();
+
+            // 4. Lakukan fetch ke endpoint backend
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        pesan: messageText
+                    })
+                });
+
+                removeTypingIndicator();
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Pastikan format response sesuai dengan yang diminta: { "jawaban": "teks..." }
+                if (data && data.jawaban) {
+                    appendMessage(data.jawaban, false);
+                } else {
+                    appendMessage("Maaf, format respons dari server tidak dikenali.", false);
+                }
+
+            } catch (error) {
+                removeTypingIndicator();
+                console.error('Error fetching chat:', error);
+                
+                // --- BAGIAN MOCKUP UNTUK PREVIEW (Hapus bagian ini di production) ---
+                // Jika fetch gagal (misal karena endpoint /api/chat tidak ada saat preview), 
+                // kita beri simulasi balasan agar UI tetap terlihat bekerja saat di-test lokal.
+                setTimeout(() => {
+                    appendMessage("Ini adalah pesan simulasi. (Error sistem: Endpoint `/api/chat` tidak dapat dijangkau karena Anda sedang melihat preview frontend. Di environment production dengan backend yang menyala, balasan ini akan berasal dari AI).", false);
+                }, 600);
+                // ----------------------------------------------------------------------
+            }
+        });
+
+        // Disable button saat awal halaman dimuat jika textarea kosong
+        sendButton.disabled = chatInput.value.trim() === '';
+    </script>
+</body>
+</html>
